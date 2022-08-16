@@ -85,3 +85,24 @@ test(`test the unhappy path `, async () => {
 
   expect(screen.getByText(errorMessageRequiredPassword)).toBeVisible()
 })
+
+
+test(`server is down`, async () => {
+  /* Add a test for what happens if the server is offline */
+
+  server.use(
+    rest.post(
+      'https://auth-provider.example.com/api/login',
+      async (req, res, ctx) => {
+        return res(ctx.status(500), ctx.json({message: 'error 500'}))
+      },
+    ),
+  )
+
+  render(<Login />)
+
+  await userEvent.click(screen.getByRole('button', {name: /submit/i}))
+  await waitForElementToBeRemoved(() => screen.getByLabelText(/loading/i))
+
+  expect(screen.getByRole('alert')).toBeVisible()
+})
