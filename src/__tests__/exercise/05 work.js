@@ -28,9 +28,15 @@ const buildLoginForm = build({
 // 🐨 before all the tests, start the server with `server.listen()`
 // 🐨 after all the tests, stop the server with `server.close()`
 
+const errorMessageRequiredPassword = 'password is required'
+
 const server = setupServer(
-  rest.get('https://auth-provider.example.com/api/login', (req, res, ctx) => {
-    return res(ctx.json({username: 'hello there'}))
+  rest.post('https://auth-provider.example.com/api/login', (req, res, ctx) => {
+    if (!req.body.password) {
+      // !!! message param name
+      return res(ctx.status(400), ctx.json({message: errorMessageRequiredPassword}))
+    }
+    return res(ctx.json({username: req.body.username}))
   }),
 )
 
@@ -56,10 +62,26 @@ test(`logging in displays the user's username`, async () => {
 
   await userEvent.type(screen.getByLabelText(/username/i), username)
   await userEvent.type(screen.getByLabelText(/password/i), password)
-
   await userEvent.click(screen.getByRole('button', {name: /submit/i}))
 
   await waitForElementToBeRemoved(() => screen.getByLabelText(/loading/i))
 
-  expect(screen.getByText('hello there')).toBeVisible()
+  expect(screen.getByText(username)).toBeVisible()
+})
+
+test(`test the unhappy path `, async () => {
+  /*Add a test for what happens if the response to our login request is a failure.
+  Our server handlers already handle situations where the username or password are
+  not provided, so you can simply not fill one of those values in and then you'll
+  want to make sure the error message is displayed. */
+
+  render(<Login />)
+  const {username} = buildLoginForm()
+
+  await userEvent.type(screen.getByLabelText(/username/i), username)
+  await userEvent.click(screen.getByRole('button', {name: /submit/i}))
+
+  await waitForElementToBeRemoved(() => screen.getByLabelText(/loading/i))
+
+  expect(screen.getByText(errorMessageRequiredPassword)).toBeVisible()
 })
